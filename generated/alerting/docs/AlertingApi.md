@@ -1,10 +1,11 @@
 # \AlertingAPI
 
-All URIs are relative to *http://localhost:5601*
+All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**CreateRule**](AlertingAPI.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule.
+[**CreateRule**](AlertingAPI.md#CreateRule) | **Post** /s/{spaceId}/api/alerting/rule | Creates a rule with a randomly generated rule identifier.
+[**CreateRuleId**](AlertingAPI.md#CreateRuleId) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId} | Creates a rule with a specific rule identifier.
 [**DeleteRule**](AlertingAPI.md#DeleteRule) | **Delete** /s/{spaceId}/api/alerting/rule/{ruleId} | Deletes a rule.
 [**DisableRule**](AlertingAPI.md#DisableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_disable | Disables a rule.
 [**EnableRule**](AlertingAPI.md#EnableRule) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_enable | Enables a rule.
@@ -30,14 +31,15 @@ Method | HTTP request | Description
 [**UnmuteAlert**](AlertingAPI.md#UnmuteAlert) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/alert/{alertId}/_unmute | Unmutes an alert.
 [**UnmuteAllAlerts**](AlertingAPI.md#UnmuteAllAlerts) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_unmute_all | Unmutes all alerts.
 [**UpdateRule**](AlertingAPI.md#UpdateRule) | **Put** /s/{spaceId}/api/alerting/rule/{ruleId} | Updates the attributes for a rule.
+[**UpdateRuleAPIKey**](AlertingAPI.md#UpdateRuleAPIKey) | **Post** /s/{spaceId}/api/alerting/rule/{ruleId}/_update_api_key | Updates the API key for a rule.
 
 
 
 ## CreateRule
 
-> RuleResponseProperties CreateRule(ctx, spaceId, ruleId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
+> RuleResponseProperties CreateRule(ctx, spaceId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
 
-Creates a rule.
+Creates a rule with a randomly generated rule identifier.
 
 
 
@@ -55,13 +57,12 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An UUID v1 or v4 identifier for the rule. If you omit this parameter, an identifier is randomly generated. 
-    createRuleRequest := *openapiclient.NewCreateRuleRequest("Consumer_example", "cluster_health_rule", map[string]interface{}{"key": interface{}(123)}, "RuleTypeId_example", *openapiclient.NewSchedule()) // CreateRuleRequest | 
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    createRuleRequest := openapiclient.create_rule_request{CreateAnomalyDetectionAlertRuleRequest: openapiclient.NewCreateAnomalyDetectionAlertRuleRequest("Consumer_example", "Name_example", map[string]interface{}{"key": interface{}(123)}, "RuleTypeId_example", *openapiclient.NewSchedule())} // CreateRuleRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
-    resp, r, err := apiClient.AlertingAPI.CreateRule(context.Background(), spaceId, ruleId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
+    resp, r, err := apiClient.AlertingAPI.CreateRule(context.Background(), spaceId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
     if err != nil {
         fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.CreateRule``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
@@ -78,11 +79,86 @@ Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
 **ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
 **spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
-**ruleId** | **string** | An UUID v1 or v4 identifier for the rule. If you omit this parameter, an identifier is randomly generated.  | 
 
 ### Other Parameters
 
 Other parameters are passed through a pointer to a apiCreateRuleRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
+ **createRuleRequest** | [**CreateRuleRequest**](CreateRuleRequest.md) |  | 
+
+### Return type
+
+[**RuleResponseProperties**](RuleResponseProperties.md)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## CreateRuleId
+
+> RuleResponseProperties CreateRuleId(ctx, spaceId, ruleId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
+
+Creates a rule with a specific rule identifier.
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An UUID v1 or v4 identifier for the rule. If you omit this parameter, an identifier is randomly generated. 
+    createRuleRequest := openapiclient.create_rule_request{CreateAnomalyDetectionAlertRuleRequest: openapiclient.NewCreateAnomalyDetectionAlertRuleRequest("Consumer_example", "Name_example", map[string]interface{}{"key": interface{}(123)}, "RuleTypeId_example", *openapiclient.NewSchedule())} // CreateRuleRequest | 
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    resp, r, err := apiClient.AlertingAPI.CreateRuleId(context.Background(), spaceId, ruleId).KbnXsrf(kbnXsrf).CreateRuleRequest(createRuleRequest).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.CreateRuleId``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+    // response from `CreateRuleId`: RuleResponseProperties
+    fmt.Fprintf(os.Stdout, "Response from `AlertingAPI.CreateRuleId`: %v\n", resp)
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+**ruleId** | **string** | An UUID v1 or v4 identifier for the rule. If you omit this parameter, an identifier is randomly generated.  | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiCreateRuleIdRequest struct via the builder pattern
 
 
 Name | Type | Description  | Notes
@@ -132,8 +208,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -205,8 +281,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -278,8 +354,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -350,17 +426,17 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    defaultSearchOperator := "OR" // string | The default operator to use for the simple_query_string. (optional) (default to "OR")
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    defaultSearchOperator := "defaultSearchOperator_example" // string | The default operator to use for the simple_query_string. (optional) (default to "OR")
     fields := []string{"Inner_example"} // []string | The fields to return in the `attributes` key of the response. (optional)
     filter := "filter_example" // string | A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: \"myTitle\"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.  (optional)
     hasReference := *openapiclient.NewFindRulesHasReferenceParameter() // FindRulesHasReferenceParameter | Filters the rules that have a relation with the reference objects with a specific type and identifier. (optional)
-    page := int32(1) // int32 | The page number to return. (optional) (default to 1)
-    perPage := int32(20) // int32 | The number of rules to return per page. (optional) (default to 20)
+    page := int32(56) // int32 | The page number to return. (optional) (default to 1)
+    perPage := int32(56) // int32 | The number of rules to return per page. (optional) (default to 20)
     search := "search_example" // string | An Elasticsearch simple_query_string query that filters the objects in the response. (optional)
     searchFields := openapiclient.findRules_search_fields_parameter{ArrayOfString: new([]string)} // FindRulesSearchFieldsParameter | The fields to perform the simple_query_string parsed query against. (optional)
     sortField := "sortField_example" // string | Determines which field is used to sort the results. The field must exist in the `attributes` key of the response.  (optional)
-    sortOrder := "asc" // string | Determines the sort order. (optional) (default to "desc")
+    sortOrder := "sortOrder_example" // string | Determines the sort order. (optional) (default to "desc")
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -440,7 +516,7 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -510,8 +586,8 @@ import (
 )
 
 func main() {
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -583,7 +659,7 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -654,9 +730,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | An UUID v1 or v4 identifier for the alert. If this parameter is omitted, the identifier is randomly generated.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    legacyCreateAlertRequestProperties := *openapiclient.NewLegacyCreateAlertRequestProperties("AlertTypeId_example", "Consumer_example", "Name_example", "NotifyWhen_example", map[string]interface{}(123), *openapiclient.NewLegacyCreateAlertRequestPropertiesSchedule()) // LegacyCreateAlertRequestProperties | 
+    alertId := "alertId_example" // string | An UUID v1 or v4 identifier for the alert. If this parameter is omitted, the identifier is randomly generated.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    legacyCreateAlertRequestProperties := *openapiclient.NewLegacyCreateAlertRequestProperties("AlertTypeId_example", "Consumer_example", "Name_example", openapiclient.notify_when("onActionGroupChange"), map[string]interface{}(123), *openapiclient.NewLegacyUpdateAlertRequestPropertiesSchedule()) // LegacyCreateAlertRequestProperties | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -731,8 +807,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -804,8 +880,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -876,17 +952,17 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    defaultSearchOperator := "OR" // string | The default operator to use for the `simple_query_string`. (optional) (default to "OR")
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    defaultSearchOperator := "defaultSearchOperator_example" // string | The default operator to use for the `simple_query_string`. (optional) (default to "OR")
     fields := []string{"Inner_example"} // []string | The fields to return in the `attributes` key of the response. (optional)
     filter := "filter_example" // string | A KQL string that you filter with an attribute from your saved object. It should look like `savedObjectType.attributes.title: \"myTitle\"`. However, if you used a direct attribute of a saved object, such as `updatedAt`, you must define your filter, for example, `savedObjectType.updatedAt > 2018-12-22`.  (optional)
     hasReference := *openapiclient.NewFindRulesHasReferenceParameter() // FindRulesHasReferenceParameter | Filters the rules that have a relation with the reference objects with a specific type and identifier. (optional)
-    page := int32(1) // int32 | The page number to return. (optional) (default to 1)
-    perPage := int32(20) // int32 | The number of alerts to return per page. (optional) (default to 20)
+    page := int32(56) // int32 | The page number to return. (optional) (default to 1)
+    perPage := int32(56) // int32 | The number of alerts to return per page. (optional) (default to 20)
     search := "search_example" // string | An Elasticsearch `simple_query_string` query that filters the alerts in the response. (optional)
     searchFields := openapiclient.findRules_search_fields_parameter{ArrayOfString: new([]string)} // FindRulesSearchFieldsParameter | The fields to perform the `simple_query_string` parsed query against. (optional)
     sortField := "sortField_example" // string | Determines which field is used to sort the results. The field must exist in the `attributes` key of the response.  (optional)
-    sortOrder := "asc" // string | Determines the sort order. (optional) (default to "desc")
+    sortOrder := "sortOrder_example" // string | Determines the sort order. (optional) (default to "desc")
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -966,8 +1042,8 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1039,7 +1115,7 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1109,7 +1185,7 @@ import (
 )
 
 func main() {
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1180,9 +1256,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | An identifier for the alert.
-    alertInstanceId := "dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2" // string | An identifier for the alert instance.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | An identifier for the alert.
+    alertInstanceId := "alertInstanceId_example" // string | An identifier for the alert instance.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1256,8 +1332,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1329,9 +1405,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | An identifier for the alert.
-    alertInstanceId := "dceeb5d0-6b41-11eb-802b-85b0c1bc8ba2" // string | An identifier for the alert instance.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | An identifier for the alert.
+    alertInstanceId := "alertInstanceId_example" // string | An identifier for the alert instance.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1405,8 +1481,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1478,9 +1554,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
-    legacyUpdateAlertRequestProperties := *openapiclient.NewLegacyUpdateAlertRequestProperties("Name_example", "NotifyWhen_example", map[string]interface{}(123), *openapiclient.NewLegacyUpdateAlertRequestPropertiesSchedule()) // LegacyUpdateAlertRequestProperties | 
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
+    legacyUpdateAlertRequestProperties := *openapiclient.NewLegacyUpdateAlertRequestProperties("Name_example", openapiclient.notify_when("onActionGroupChange"), map[string]interface{}(123), *openapiclient.NewLegacyUpdateAlertRequestPropertiesSchedule()) // LegacyUpdateAlertRequestProperties | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1555,8 +1631,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    alertId := "41893910-6bca-11eb-9e0d-85d233e3ee35" // string | The identifier for the alert.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | The identifier for the alert.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1628,9 +1704,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    alertId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the alert. The identifier is generated by the rule and might be any arbitrary string.
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | An identifier for the alert. The identifier is generated by the rule and might be any arbitrary string.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1704,8 +1780,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1777,9 +1853,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    alertId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the alert. The identifier is generated by the rule and might be any arbitrary string.
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    alertId := "alertId_example" // string | An identifier for the alert. The identifier is generated by the rule and might be any arbitrary string.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1853,8 +1929,8 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1926,9 +2002,9 @@ import (
 
 func main() {
     kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
-    ruleId := "ac4e6b90-6be7-11eb-ba0d-9b1c1f912d74" // string | An identifier for the rule.
-    spaceId := "default" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
-    updateRuleRequest := *openapiclient.NewUpdateRuleRequest("cluster_health_rule", map[string]interface{}{"key": interface{}(123)}, *openapiclient.NewSchedule()) // UpdateRuleRequest | 
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+    updateRuleRequest := *openapiclient.NewUpdateRuleRequest("Name_example", map[string]interface{}{"key": interface{}(123)}, *openapiclient.NewSchedule()) // UpdateRuleRequest | 
 
     configuration := openapiclient.NewConfiguration()
     apiClient := openapiclient.NewAPIClient(configuration)
@@ -1974,6 +2050,79 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
 - **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
+[[Back to Model list]](../README.md#documentation-for-models)
+[[Back to README]](../README.md)
+
+
+## UpdateRuleAPIKey
+
+> UpdateRuleAPIKey(ctx, ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+
+Updates the API key for a rule.
+
+
+
+### Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "os"
+    openapiclient "github.com/elastic/terraform-provider-elasticstack/alerting"
+)
+
+func main() {
+    kbnXsrf := "kbnXsrf_example" // string | Cross-site request forgery protection
+    ruleId := "ruleId_example" // string | An identifier for the rule.
+    spaceId := "spaceId_example" // string | An identifier for the space. If `/s/` and the identifier are omitted from the path, the default space is used.
+
+    configuration := openapiclient.NewConfiguration()
+    apiClient := openapiclient.NewAPIClient(configuration)
+    r, err := apiClient.AlertingAPI.UpdateRuleAPIKey(context.Background(), ruleId, spaceId).KbnXsrf(kbnXsrf).Execute()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error when calling `AlertingAPI.UpdateRuleAPIKey``: %v\n", err)
+        fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+    }
+}
+```
+
+### Path Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
+**ruleId** | **string** | An identifier for the rule. | 
+**spaceId** | **string** | An identifier for the space. If &#x60;/s/&#x60; and the identifier are omitted from the path, the default space is used. | 
+
+### Other Parameters
+
+Other parameters are passed through a pointer to a apiUpdateRuleAPIKeyRequest struct via the builder pattern
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **kbnXsrf** | **string** | Cross-site request forgery protection | 
+
+
+
+### Return type
+
+ (empty response body)
+
+### Authorization
+
+[basicAuth](../README.md#basicAuth), [apiKeyAuth](../README.md#apiKeyAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)

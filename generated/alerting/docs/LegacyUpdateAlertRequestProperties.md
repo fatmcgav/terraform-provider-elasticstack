@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Actions** | Pointer to [**[]LegacyUpdateAlertRequestPropertiesActionsInner**](LegacyUpdateAlertRequestPropertiesActionsInner.md) |  | [optional] 
 **Name** | **string** | A name to reference and search. | 
-**NotifyWhen** | **string** | The condition for throttling the notification. | 
+**NotifyWhen** | [**NotifyWhen**](NotifyWhen.md) |  | 
 **Params** | **map[string]interface{}** | The parameters to pass to the alert type executor &#x60;params&#x60; value. This will also validate against the alert type params validator, if defined. | 
 **Schedule** | [**LegacyUpdateAlertRequestPropertiesSchedule**](LegacyUpdateAlertRequestPropertiesSchedule.md) |  | 
 **Tags** | Pointer to **[]string** | A list of keywords to reference and search. | [optional] 
@@ -16,7 +16,7 @@ Name | Type | Description | Notes
 
 ### NewLegacyUpdateAlertRequestProperties
 
-`func NewLegacyUpdateAlertRequestProperties(name string, notifyWhen string, params map[string]interface{}, schedule LegacyUpdateAlertRequestPropertiesSchedule, ) *LegacyUpdateAlertRequestProperties`
+`func NewLegacyUpdateAlertRequestProperties(name string, notifyWhen NotifyWhen, params map[string]interface{}, schedule LegacyUpdateAlertRequestPropertiesSchedule, ) *LegacyUpdateAlertRequestProperties`
 
 NewLegacyUpdateAlertRequestProperties instantiates a new LegacyUpdateAlertRequestProperties object
 This constructor will assign default values to properties that have it defined,
@@ -78,20 +78,20 @@ SetName sets Name field to given value.
 
 ### GetNotifyWhen
 
-`func (o *LegacyUpdateAlertRequestProperties) GetNotifyWhen() string`
+`func (o *LegacyUpdateAlertRequestProperties) GetNotifyWhen() NotifyWhen`
 
 GetNotifyWhen returns the NotifyWhen field if non-nil, zero value otherwise.
 
 ### GetNotifyWhenOk
 
-`func (o *LegacyUpdateAlertRequestProperties) GetNotifyWhenOk() (*string, bool)`
+`func (o *LegacyUpdateAlertRequestProperties) GetNotifyWhenOk() (*NotifyWhen, bool)`
 
 GetNotifyWhenOk returns a tuple with the NotifyWhen field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetNotifyWhen
 
-`func (o *LegacyUpdateAlertRequestProperties) SetNotifyWhen(v string)`
+`func (o *LegacyUpdateAlertRequestProperties) SetNotifyWhen(v NotifyWhen)`
 
 SetNotifyWhen sets NotifyWhen field to given value.
 

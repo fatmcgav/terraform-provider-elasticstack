@@ -6,8 +6,9 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **AlertsCount** | Pointer to [**RuleResponsePropertiesLastRunAlertsCount**](RuleResponsePropertiesLastRunAlertsCount.md) |  | [optional] 
 **Outcome** | Pointer to **string** |  | [optional] 
-**OutcomeMsg** | Pointer to **NullableString** |  | [optional] 
-**Warning** | Pointer to **NullableString** |  | [optional] 
+**OutcomeMsg** | Pointer to **[]string** |  | [optional] 
+**OutcomeOrder** | Pointer to **int32** |  | [optional] 
+**Warning** | Pointer to **interface{}** |  | [optional] 
 
 ## Methods
 
@@ -80,20 +81,20 @@ HasOutcome returns a boolean if a field has been set.
 
 ### GetOutcomeMsg
 
-`func (o *RuleResponsePropertiesLastRun) GetOutcomeMsg() string`
+`func (o *RuleResponsePropertiesLastRun) GetOutcomeMsg() []string`
 
 GetOutcomeMsg returns the OutcomeMsg field if non-nil, zero value otherwise.
 
 ### GetOutcomeMsgOk
 
-`func (o *RuleResponsePropertiesLastRun) GetOutcomeMsgOk() (*string, bool)`
+`func (o *RuleResponsePropertiesLastRun) GetOutcomeMsgOk() (*[]string, bool)`
 
 GetOutcomeMsgOk returns a tuple with the OutcomeMsg field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetOutcomeMsg
 
-`func (o *RuleResponsePropertiesLastRun) SetOutcomeMsg(v string)`
+`func (o *RuleResponsePropertiesLastRun) SetOutcomeMsg(v []string)`
 
 SetOutcomeMsg sets OutcomeMsg field to given value.
 
@@ -103,32 +104,47 @@ SetOutcomeMsg sets OutcomeMsg field to given value.
 
 HasOutcomeMsg returns a boolean if a field has been set.
 
-### SetOutcomeMsgNil
+### GetOutcomeOrder
 
-`func (o *RuleResponsePropertiesLastRun) SetOutcomeMsgNil(b bool)`
+`func (o *RuleResponsePropertiesLastRun) GetOutcomeOrder() int32`
 
- SetOutcomeMsgNil sets the value for OutcomeMsg to be an explicit nil
+GetOutcomeOrder returns the OutcomeOrder field if non-nil, zero value otherwise.
 
-### UnsetOutcomeMsg
-`func (o *RuleResponsePropertiesLastRun) UnsetOutcomeMsg()`
+### GetOutcomeOrderOk
 
-UnsetOutcomeMsg ensures that no value is present for OutcomeMsg, not even an explicit nil
+`func (o *RuleResponsePropertiesLastRun) GetOutcomeOrderOk() (*int32, bool)`
+
+GetOutcomeOrderOk returns a tuple with the OutcomeOrder field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetOutcomeOrder
+
+`func (o *RuleResponsePropertiesLastRun) SetOutcomeOrder(v int32)`
+
+SetOutcomeOrder sets OutcomeOrder field to given value.
+
+### HasOutcomeOrder
+
+`func (o *RuleResponsePropertiesLastRun) HasOutcomeOrder() bool`
+
+HasOutcomeOrder returns a boolean if a field has been set.
+
 ### GetWarning
 
-`func (o *RuleResponsePropertiesLastRun) GetWarning() string`
+`func (o *RuleResponsePropertiesLastRun) GetWarning() interface{}`
 
 GetWarning returns the Warning field if non-nil, zero value otherwise.
 
 ### GetWarningOk
 
-`func (o *RuleResponsePropertiesLastRun) GetWarningOk() (*string, bool)`
+`func (o *RuleResponsePropertiesLastRun) GetWarningOk() (*interface{}, bool)`
 
 GetWarningOk returns a tuple with the Warning field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetWarning
 
-`func (o *RuleResponsePropertiesLastRun) SetWarning(v string)`
+`func (o *RuleResponsePropertiesLastRun) SetWarning(v interface{})`
 
 SetWarning sets Warning field to given value.
 

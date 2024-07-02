@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Actions** | Pointer to **[]map[string]interface{}** |  | [optional] 
 **AlertTypeId** | Pointer to **string** |  | [optional] 
-**ApiKeyOwner** | Pointer to **NullableString** |  | [optional] 
+**ApiKeyOwner** | Pointer to **interface{}** |  | [optional] 
 **CreatedAt** | Pointer to **time.Time** | The date and time that the alert was created. | [optional] 
 **CreatedBy** | Pointer to **string** | The identifier for the user that created the alert. | [optional] 
 **Enabled** | Pointer to **bool** | Indicates whether the alert is currently enabled. | [optional] 
@@ -20,9 +20,9 @@ Name | Type | Description | Notes
 **Schedule** | Pointer to [**AlertResponsePropertiesSchedule**](AlertResponsePropertiesSchedule.md) |  | [optional] 
 **ScheduledTaskId** | Pointer to **string** |  | [optional] 
 **Tags** | Pointer to **[]string** |  | [optional] 
-**Throttle** | Pointer to **NullableString** |  | [optional] 
+**Throttle** | Pointer to **interface{}** |  | [optional] 
 **UpdatedAt** | Pointer to **string** |  | [optional] 
-**UpdatedBy** | Pointer to **NullableString** | The identifier for the user that updated this alert most recently. | [optional] 
+**UpdatedBy** | Pointer to **interface{}** | The identifier for the user that updated this alert most recently. | [optional] 
 
 ## Methods
 
@@ -95,20 +95,20 @@ HasAlertTypeId returns a boolean if a field has been set.
 
 ### GetApiKeyOwner
 
-`func (o *AlertResponseProperties) GetApiKeyOwner() string`
+`func (o *AlertResponseProperties) GetApiKeyOwner() interface{}`
 
 GetApiKeyOwner returns the ApiKeyOwner field if non-nil, zero value otherwise.
 
 ### GetApiKeyOwnerOk
 
-`func (o *AlertResponseProperties) GetApiKeyOwnerOk() (*string, bool)`
+`func (o *AlertResponseProperties) GetApiKeyOwnerOk() (*interface{}, bool)`
 
 GetApiKeyOwnerOk returns a tuple with the ApiKeyOwner field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetApiKeyOwner
 
-`func (o *AlertResponseProperties) SetApiKeyOwner(v string)`
+`func (o *AlertResponseProperties) SetApiKeyOwner(v interface{})`
 
 SetApiKeyOwner sets ApiKeyOwner field to given value.
 
@@ -303,16 +303,6 @@ SetMutedInstanceIds sets MutedInstanceIds field to given value.
 
 HasMutedInstanceIds returns a boolean if a field has been set.
 
-### SetMutedInstanceIdsNil
-
-`func (o *AlertResponseProperties) SetMutedInstanceIdsNil(b bool)`
-
- SetMutedInstanceIdsNil sets the value for MutedInstanceIds to be an explicit nil
-
-### UnsetMutedInstanceIds
-`func (o *AlertResponseProperties) UnsetMutedInstanceIds()`
-
-UnsetMutedInstanceIds ensures that no value is present for MutedInstanceIds, not even an explicit nil
 ### GetName
 
 `func (o *AlertResponseProperties) GetName() string`
@@ -465,20 +455,20 @@ HasTags returns a boolean if a field has been set.
 
 ### GetThrottle
 
-`func (o *AlertResponseProperties) GetThrottle() string`
+`func (o *AlertResponseProperties) GetThrottle() interface{}`
 
 GetThrottle returns the Throttle field if non-nil, zero value otherwise.
 
 ### GetThrottleOk
 
-`func (o *AlertResponseProperties) GetThrottleOk() (*string, bool)`
+`func (o *AlertResponseProperties) GetThrottleOk() (*interface{}, bool)`
 
 GetThrottleOk returns a tuple with the Throttle field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetThrottle
 
-`func (o *AlertResponseProperties) SetThrottle(v string)`
+`func (o *AlertResponseProperties) SetThrottle(v interface{})`
 
 SetThrottle sets Throttle field to given value.
 
@@ -525,20 +515,20 @@ HasUpdatedAt returns a boolean if a field has been set.
 
 ### GetUpdatedBy
 
-`func (o *AlertResponseProperties) GetUpdatedBy() string`
+`func (o *AlertResponseProperties) GetUpdatedBy() interface{}`
 
 GetUpdatedBy returns the UpdatedBy field if non-nil, zero value otherwise.
 
 ### GetUpdatedByOk
 
-`func (o *AlertResponseProperties) GetUpdatedByOk() (*string, bool)`
+`func (o *AlertResponseProperties) GetUpdatedByOk() (*interface{}, bool)`
 
 GetUpdatedByOk returns a tuple with the UpdatedBy field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetUpdatedBy
 
-`func (o *AlertResponseProperties) SetUpdatedBy(v string)`
+`func (o *AlertResponseProperties) SetUpdatedBy(v interface{})`
 
 SetUpdatedBy sets UpdatedBy field to given value.
 

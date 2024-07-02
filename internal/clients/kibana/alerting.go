@@ -21,8 +21,8 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 	actions := []models.AlertingRuleAction{}
 	for _, action := range res.Actions {
 		actions = append(actions, models.AlertingRuleAction{
-			Group:  *action.Group,
-			ID:     *action.Id,
+			Group:  action.Group,
+			ID:     action.Id,
 			Params: action.Params,
 		})
 	}
@@ -57,8 +57,8 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	for index := range ruleActions {
 		action := ruleActions[index]
 		actions = append(actions, alerting.ActionsInner{
-			Group:  &action.Group,
-			Id:     &action.ID,
+			Group:  action.Group,
+			Id:     action.ID,
 			Params: action.Params,
 		})
 	}

@@ -5,12 +5,13 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Actions** | Pointer to [**[]ActionsInner**](ActionsInner.md) |  | [optional] [default to []]
+**AlertDelay** | Pointer to [**AlertDelay**](AlertDelay.md) |  | [optional] 
 **Name** | **string** | The name of the rule. | 
 **NotifyWhen** | Pointer to [**NotifyWhen**](NotifyWhen.md) |  | [optional] 
 **Params** | **map[string]interface{}** | The parameters for the rule. | 
 **Schedule** | [**Schedule**](Schedule.md) |  | 
 **Tags** | Pointer to **[]string** | The tags for the rule. | [optional] [default to []]
-**Throttle** | Pointer to **NullableString** | The throttle interval, which defines how often an alert generates repeated actions. It is applicable only if &#x60;notify_when&#x60; is set to &#x60;onThrottleInterval&#x60;. It is specified in seconds, minutes, hours, or days. | [optional] 
+**Throttle** | Pointer to **interface{}** | Deprecated in 8.13.0. Use the &#x60;throttle&#x60; property in the action &#x60;frequency&#x60; object instead. The throttle interval, which defines how often an alert generates repeated actions. NOTE: You cannot specify the throttle interval at both the rule and action level. If you set it at the rule level then update the rule in Kibana, it is automatically changed to use action-specific values.  | [optional] [default to null]
 
 ## Methods
 
@@ -56,16 +57,31 @@ SetActions sets Actions field to given value.
 
 HasActions returns a boolean if a field has been set.
 
-### SetActionsNil
+### GetAlertDelay
 
-`func (o *UpdateRuleRequest) SetActionsNil(b bool)`
+`func (o *UpdateRuleRequest) GetAlertDelay() AlertDelay`
 
- SetActionsNil sets the value for Actions to be an explicit nil
+GetAlertDelay returns the AlertDelay field if non-nil, zero value otherwise.
 
-### UnsetActions
-`func (o *UpdateRuleRequest) UnsetActions()`
+### GetAlertDelayOk
 
-UnsetActions ensures that no value is present for Actions, not even an explicit nil
+`func (o *UpdateRuleRequest) GetAlertDelayOk() (*AlertDelay, bool)`
+
+GetAlertDelayOk returns a tuple with the AlertDelay field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetAlertDelay
+
+`func (o *UpdateRuleRequest) SetAlertDelay(v AlertDelay)`
+
+SetAlertDelay sets AlertDelay field to given value.
+
+### HasAlertDelay
+
+`func (o *UpdateRuleRequest) HasAlertDelay() bool`
+
+HasAlertDelay returns a boolean if a field has been set.
+
 ### GetName
 
 `func (o *UpdateRuleRequest) GetName() string`
@@ -178,20 +194,20 @@ HasTags returns a boolean if a field has been set.
 
 ### GetThrottle
 
-`func (o *UpdateRuleRequest) GetThrottle() string`
+`func (o *UpdateRuleRequest) GetThrottle() interface{}`
 
 GetThrottle returns the Throttle field if non-nil, zero value otherwise.
 
 ### GetThrottleOk
 
-`func (o *UpdateRuleRequest) GetThrottleOk() (*string, bool)`
+`func (o *UpdateRuleRequest) GetThrottleOk() (*interface{}, bool)`
 
 GetThrottleOk returns a tuple with the Throttle field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetThrottle
 
-`func (o *UpdateRuleRequest) SetThrottle(v string)`
+`func (o *UpdateRuleRequest) SetThrottle(v interface{})`
 
 SetThrottle sets Throttle field to given value.
 

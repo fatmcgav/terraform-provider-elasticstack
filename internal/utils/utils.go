@@ -13,11 +13,27 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	providerSchema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	sdkdiag "github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+func ConvertSDKDiagnosticsToFramework(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
+	var fwDiags fwdiag.Diagnostics
+
+	for _, sdkDiag := range sdkDiags {
+		if sdkDiag.Severity == sdkdiag.Error {
+			fwDiags.AddError(sdkDiag.Summary, sdkDiag.Detail)
+		} else {
+			fwDiags.AddWarning(sdkDiag.Summary, sdkDiag.Detail)
+		}
+	}
+
+	return fwDiags
+}
 
 func CheckError(res *esapi.Response, errMsg string) sdkdiag.Diagnostics {
 	var diags sdkdiag.Diagnostics
@@ -67,6 +83,24 @@ func CheckHttpErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 		diags.AddError(errMsg, fmt.Sprintf("Failed with: %s", body))
 		return diags
 	}
+	return diags
+}
+
+func FrameworkDiagsFromSDK(sdkDiags sdkdiag.Diagnostics) fwdiag.Diagnostics {
+	var diags fwdiag.Diagnostics
+
+	for _, sdkDiag := range sdkDiags {
+		var fwDiag fwdiag.Diagnostic
+
+		if sdkDiag.Severity == sdkdiag.Error {
+			fwDiag = fwdiag.NewErrorDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
+		} else {
+			fwDiag = fwdiag.NewWarningDiagnostic(sdkDiag.Summary, sdkDiag.Detail)
+		}
+
+		diags.Append(fwDiag)
+	}
+
 	return diags
 }
 
@@ -211,4 +245,37 @@ func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
 		inv[v] = k
 	}
 	return inv
+}
+
+func SdkDiagsAsError(diags sdkdiag.Diagnostics) error {
+	for _, diag := range diags {
+		if diag.Severity == sdkdiag.Error {
+			return fmt.Errorf("%s: %s", diag.Summary, diag.Detail)
+		}
+	}
+	return nil
+}
+
+func FwDiagsAsError(diags fwdiag.Diagnostics) error {
+	for _, diag := range diags {
+		if diag.Severity() == fwdiag.SeverityError {
+			return fmt.Errorf("%s: %s", diag.Summary(), diag.Detail())
+		}
+	}
+	return nil
+}
+
+// ConvertToAttrDiags wraps an existing collection of diagnostics with an attribute path.
+func ConvertToAttrDiags(diags fwdiag.Diagnostics, path path.Path) fwdiag.Diagnostics {
+	var nd fwdiag.Diagnostics
+	for _, d := range diags {
+		if d.Severity() == fwdiag.SeverityError {
+			nd.AddAttributeError(path, d.Summary(), d.Detail())
+		} else if d.Severity() == diag.SeverityWarning {
+			nd.AddAttributeWarning(path, d.Summary(), d.Detail())
+		} else {
+			nd.Append(d)
+		}
+	}
+	return nd
 }

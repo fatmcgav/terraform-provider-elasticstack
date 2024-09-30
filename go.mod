@@ -1,24 +1,25 @@
 module github.com/elastic/terraform-provider-elasticstack
 
-go 1.22
+go 1.22.0
 
-toolchain go1.23.0
+toolchain go1.23.1
 
 require (
 	github.com/disaster37/go-kibana-rest/v8 v8.5.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
+	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200723130312-85980079f637
 	github.com/hashicorp/go-version v1.7.0
-	github.com/hashicorp/terraform-plugin-framework v1.11.0
-	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.1.0
+	github.com/hashicorp/terraform-plugin-framework v1.12.0
+	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.13.0
-	github.com/hashicorp/terraform-plugin-go v0.23.0
+	github.com/hashicorp/terraform-plugin-go v0.24.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-mux v0.16.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.34.0
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/oapi-codegen/oapi-codegen/v2 v2.3.0
+	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
@@ -32,7 +33,7 @@ require (
 	github.com/cloudflare/circl v1.3.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.17.0 // indirect
-	github.com/go-resty/resty/v2 v2.14.0 // indirect
+	github.com/go-resty/resty/v2 v2.15.3 // indirect
 	github.com/go-test/deep v1.0.8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
@@ -70,13 +71,13 @@ require (
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
-	google.golang.org/grpc v1.65.0 // indirect
+	google.golang.org/grpc v1.66.2 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

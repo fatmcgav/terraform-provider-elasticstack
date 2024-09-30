@@ -1,11 +1,24 @@
 ## [Unreleased]
 
+- Fix handling of `sys_monitoring` in `elasticstack_fleet_agent_policy` ([#792](https://github.com/elastic/terraform-provider-elasticstack/pull/792))
+- Migrate `elasticstack_fleet_agent_policy`, `elasticstack_fleet_integration` (both), and `elasticstack_fleet_server_host` to terraform-plugin-framework ([#785](https://github.com/elastic/terraform-provider-elasticstack/pull/785))
+- Fix for synthetics http/tcp monitor produces inconsistent result after apply ([#801](https://github.com/elastic/terraform-provider-elasticstack/pull/801))
+
+## [0.11.7] - 2024-09-20
+
+- Add the `alerts_filter` field to the `actions` in the Create Rule API ([#774](https://github.com/elastic/terraform-provider-elasticstack/pull/774))
 - Add the `alert_delay` field to the Create Rule API ([#715](https://github.com/elastic/terraform-provider-elasticstack/pull/715))
 - Add support for data_stream `lifecycle` template settings ([#724](https://github.com/elastic/terraform-provider-elasticstack/pull/724))
 - Fix a provider panic when `elasticstack_kibana_action_connector` reads a non-existant connector ([#729](https://github.com/elastic/terraform-provider-elasticstack/pull/729))
 - Add support for `remote_indicies` to `elasticstack_elasticsearch_security_role` & `elasticstack_kibana_security_role` (#723)[https://github.com/elastic/terraform-provider-elasticstack/pull/723]
 - Added support for global data tags in agent policy creation and update. Upgraded the generated Fleet API to version 8.15.0. (#730)[https://github.com/elastic/terraform-provider-elasticstack/pull/730]
 - Fix error handling in `elasticstack_kibana_import_saved_objects` ([#738](https://github.com/elastic/terraform-provider-elasticstack/pull/738))
+- Remove `space_id` parameter from private locations to fix inconsistent state for `elasticstack_kibana_synthetics_private_location` `space_id` ([#733](https://github.com/elastic/terraform-provider-elasticstack/pull/733))
+- Add the `Frequency` field to the Create Rule API ([#753](https://github.com/elastic/terraform-provider-elasticstack/pull/753))
+- Prevent a provider panic when the repository referenced in an `elasticstack_elasticsearch_snapshot_repository` does not exist ([#758](https://github.com/elastic/terraform-provider-elasticstack/pull/758))
+- Add support for `remote_indicies` to `elasticstack_elasticsearch_security_api_key` (#766)[https://github.com/elastic/terraform-provider-elasticstack/pull/766]
+- Add support for `icmp` and `browser` monitor types to `elasticstack_kibana_synthetics_monitor` resource (#772)[https://github.com/elastic/terraform-provider-elasticstack/pull/772]
+- Migrate `elasticstack_fleet_enrollment_tokens` to terraform-plugin-framework ([#778](https://github.com/elastic/terraform-provider-elasticstack/pull/778))
 
 ## [0.11.6] - 2024-08-20
 
@@ -332,7 +345,8 @@
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.7...HEAD
+[0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.6...v0.11.7
 [0.11.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.5...v0.11.6
 [0.11.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.4...v0.11.5
 [0.11.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.11.3...v0.11.4

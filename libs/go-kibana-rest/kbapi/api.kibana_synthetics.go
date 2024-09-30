@@ -46,6 +46,10 @@ const (
 
 	ModeAll HttpMonitorMode = "all"
 	ModeAny                 = "any"
+
+	ScreenshotOn             ScreenshotOption = "on"
+	ScreenshotOff                             = "off"
+	ScreenshotOnlyOfFailures                  = "only-on-failure"
 )
 
 var plMu sync.Mutex
@@ -65,6 +69,7 @@ type MonitorType string
 type MonitorLocation string
 type MonitorSchedule int
 type HttpMonitorMode string
+type ScreenshotOption string
 
 type JsonObject map[string]interface{}
 
@@ -88,6 +93,19 @@ type SyntheticsStatusConfig struct {
 type MonitorAlertConfig struct {
 	Status *SyntheticsStatusConfig `json:"status,omitempty"`
 	Tls    *SyntheticsStatusConfig `json:"tls,omitempty"`
+}
+
+type ICMPMonitorFields struct {
+	Host string `json:"host"`
+	Wait string `json:"wait,omitempty"`
+}
+
+type BrowserMonitorFields struct {
+	InlineScript      string           `json:"inline_script"`
+	Screenshots       ScreenshotOption `json:"screenshots,omitempty"`
+	SyntheticsArgs    []string         `json:"synthetics_args,omitempty"`
+	IgnoreHttpsErrors *bool            `json:"ignore_https_errors,omitempty"`
+	PlaywrightOptions JsonObject       `json:"playwright_options,omitempty"`
 }
 
 type TCPMonitorFields struct {
@@ -207,11 +225,20 @@ type SyntheticsMonitor struct {
 	ProxyUrl              string   `json:"proxy_url,omitempty"`
 	SslVerificationMode   string   `json:"ssl.verification_mode"`
 	SslSupportedProtocols []string `json:"ssl.supported_protocols"`
+	//tcp and icmp
+	Host string `json:"host,omitempty"`
 	//tcp
-	Host                  string `json:"host,omitempty"`
 	ProxyUseLocalResolver *bool  `json:"proxy_use_local_resolver,omitempty"`
 	CheckSend             string `json:"check.send,omitempty"`
 	CheckReceive          string `json:"check.receive,omitempty"`
+	//icmp
+	Wait json.Number `json:"wait,omitempty"`
+	//browser
+	Screenshots       string     `json:"screenshots,omitempty"`
+	IgnoreHttpsErrors *bool      `json:"ignore_https_errors,omitempty"`
+	InlineScript      string     `json:"inline_script"`
+	SyntheticsArgs    []string   `json:"synthetics_args,omitempty"`
+	PlaywrightOptions JsonObject `json:"playwright_options,omitempty"`
 }
 
 type MonitorTypeConfig struct {
@@ -248,6 +275,36 @@ func (f TCPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{}
 	}
 }
 
+func (f ICMPMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Icmp}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		ICMPMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
+func (f BrowserMonitorFields) APIRequest(config SyntheticsMonitorConfig) interface{} {
+
+	mType := MonitorTypeConfig{Type: Browser}
+
+	return struct {
+		SyntheticsMonitorConfig
+		MonitorTypeConfig
+		BrowserMonitorFields
+	}{
+		config,
+		mType,
+		f,
+	}
+}
+
 type KibanaSyntheticsMonitorAdd func(ctx context.Context, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
 
 type KibanaSyntheticsMonitorUpdate func(ctx context.Context, id MonitorID, config SyntheticsMonitorConfig, fields MonitorFields, namespace string) (*SyntheticsMonitor, error)
@@ -256,14 +313,14 @@ type KibanaSyntheticsMonitorGet func(ctx context.Context, id MonitorID, namespac
 
 type KibanaSyntheticsMonitorDelete func(ctx context.Context, namespace string, ids ...MonitorID) ([]MonitorDeleteStatus, error)
 
-type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error)
+type KibanaSyntheticsPrivateLocationCreate func(ctx context.Context, pLoc PrivateLocationConfig) (*PrivateLocation, error)
 
-type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string, namespace string) (*PrivateLocation, error)
+type KibanaSyntheticsPrivateLocationGet func(ctx context.Context, idOrLabel string) (*PrivateLocation, error)
 
-type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string, namespace string) error
+type KibanaSyntheticsPrivateLocationDelete func(ctx context.Context, id string) error
 
 func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSyntheticsPrivateLocationGet {
-	return func(ctx context.Context, idOrLabel string, _ string) (*PrivateLocation, error) {
+	return func(ctx context.Context, idOrLabel string) (*PrivateLocation, error) {
 		if idOrLabel == "" {
 			return nil, APIError{
 				Code:    404,
@@ -282,11 +339,11 @@ func newKibanaSyntheticsPrivateLocationGetFunc(c *resty.Client) KibanaSynthetics
 }
 
 func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSyntheticsPrivateLocationCreate {
-	return func(ctx context.Context, pLoc PrivateLocationConfig, namespace string) (*PrivateLocation, error) {
+	return func(ctx context.Context, pLoc PrivateLocationConfig) (*PrivateLocation, error) {
 		plMu.Lock()
 		defer plMu.Unlock()
 
-		path := basePath(namespace, privateLocationsSuffix)
+		path := basePath("", privateLocationsSuffix)
 		log.Debugf("URL to create private locations: %s", path)
 		resp, err := c.R().SetContext(ctx).SetBody(pLoc).Post(path)
 		if err = handleKibanaError(err, resp); err != nil {
@@ -297,11 +354,11 @@ func newKibanaSyntheticsPrivateLocationCreateFunc(c *resty.Client) KibanaSynthet
 }
 
 func newKibanaSyntheticsPrivateLocationDeleteFunc(c *resty.Client) KibanaSyntheticsPrivateLocationDelete {
-	return func(ctx context.Context, id string, namespace string) error {
+	return func(ctx context.Context, id string) error {
 		plMu.Lock()
 		defer plMu.Unlock()
 
-		path := basePathWithId(namespace, privateLocationsSuffix, id)
+		path := basePathWithId("", privateLocationsSuffix, id)
 		log.Debugf("URL to delete private locations: %s", path)
 		resp, err := c.R().SetContext(ctx).Delete(path)
 		err = handleKibanaError(err, resp)

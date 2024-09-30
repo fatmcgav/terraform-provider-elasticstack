@@ -3,6 +3,7 @@ package kibana
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -15,6 +16,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// when notify_when and throttle became optional
+var frequencyMinSupportedVersion = version.Must(version.NewVersion("8.6.0"))
+var alertsFilterMinSupportedVersion = version.Must(version.NewVersion("8.9.0"))
 var alertDelayMinSupportedVersion = version.Must(version.NewVersion("8.13.0"))
 
 func ResourceAlertingRule() *schema.Resource {
@@ -45,9 +49,9 @@ func ResourceAlertingRule() *schema.Resource {
 			ForceNew:    true,
 		},
 		"notify_when": {
-			Description:  "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
+			Description:  "Required until v8.6.0. Deprecated in v8.13.0. Use the `notify_when` property in the action `frequency` object instead. Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
 			Type:         schema.TypeString,
-			Required:     true,
+			Optional:     true,
 			ValidateFunc: validation.StringInSlice([]string{"onActionGroupChange", "onActiveAlert", "onThrottleInterval"}, false),
 		},
 		"params": {
@@ -93,6 +97,87 @@ func ResourceAlertingRule() *schema.Resource {
 						ValidateFunc:     validation.StringIsJSON,
 						DiffSuppressFunc: utils.DiffJsonSuppress,
 					},
+					"frequency": {
+						Description: "The properties that affect how often actions are generated. If the rule type supports setting summary to true, the action can be a summary of alerts at the specified notification interval. Otherwise, an action runs for each alert at the specified notification interval. NOTE: You cannot specify these parameters when `notify_when` or `throttle` are defined at the rule level.",
+						Type:        schema.TypeList,
+						MinItems:    0,
+						MaxItems:    1,
+						Optional:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"summary": {
+									Description: "Indicates whether the action is a summary.",
+									Type:        schema.TypeBool,
+									Required:    true,
+								},
+								"notify_when": {
+									Description:  "Defines how often alerts generate actions. Valid values include: `onActionGroupChange`: Actions run when the alert status changes; `onActiveAlert`: Actions run when the alert becomes active and at each check interval while the rule conditions are met; `onThrottleInterval`: Actions run when the alert becomes active and at the interval specified in the throttle property while the rule conditions are met. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `notify_when` values.",
+									Type:         schema.TypeString,
+									Required:     true,
+									ValidateFunc: validation.StringInSlice([]string{"onActionGroupChange", "onActiveAlert", "onThrottleInterval"}, false),
+								},
+								"throttle": {
+									Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
+									Type:         schema.TypeString,
+									Optional:     true,
+									ValidateFunc: utils.StringIsDuration,
+								},
+							},
+						},
+					},
+					"alerts_filter": {
+						Description: "Conditions that affect whether the action runs. If you specify multiple conditions, all conditions must be met for the action to run. For example, if an alert occurs within the specified time frame and matches the query, the action runs.",
+						Type:        schema.TypeList,
+						MinItems:    0,
+						MaxItems:    1,
+						Optional:    true,
+						Elem: &schema.Resource{
+							Schema: map[string]*schema.Schema{
+								"kql": {
+									Description: "Defines a query filter that determines whether the action runs. Written in Kibana Query Language (KQL).",
+									Type:        schema.TypeString,
+									Optional:    true,
+								},
+								"timeframe": {
+									Description: "Defines a period that limits whether the action runs.",
+									Type:        schema.TypeList,
+									MinItems:    0,
+									MaxItems:    1,
+									Optional:    true,
+									Elem: &schema.Resource{
+										Schema: map[string]*schema.Schema{
+											"days": {
+												Description: "Defines the days of the week that the action can run, represented as an array of numbers. For example, 1 represents Monday. An empty array is equivalent to specifying all the days of the week.",
+												Type:        schema.TypeList,
+												Required:    true,
+												Elem: &schema.Schema{
+													Type:         schema.TypeInt,
+													ValidateFunc: validation.IntBetween(1, 7),
+												},
+											},
+											"timezone": {
+												Description: "The ISO time zone for the hours values. Values such as UTC and UTC+1 also work but lack built-in daylight savings time support and are not recommended.",
+												Type:        schema.TypeString,
+												Required:    true,
+											},
+											"hours_start": {
+												Description:  "Defines the range of time in a day that the action can run. The start of the time frame in 24-hour notation (hh:mm).",
+												Type:         schema.TypeString,
+												Required:     true,
+												ValidateFunc: utils.StringIsHours,
+											},
+											"hours_end": {
+												Description:  "Defines the range of time in a day that the action can run. The end of the time frame in 24-hour notation (hh:mm).",
+												Type:         schema.TypeString,
+												Required:     true,
+												ValidateFunc: utils.StringIsHours,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -110,12 +195,11 @@ func ResourceAlertingRule() *schema.Resource {
 			},
 		},
 		"throttle": {
-			Description:  "Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
+			Description:  "Deprecated in 8.13.0. Defines how often an alert generates repeated actions. This custom action interval must be specified in seconds, minutes, hours, or days. For example, 10m or 1h. This property is applicable only if `notify_when` is `onThrottleInterval`. NOTE: This is a rule level property; if you update the rule in Kibana, it is automatically changed to use action-specific `throttle` values.",
 			Type:         schema.TypeString,
 			Optional:     true,
 			ValidateFunc: utils.StringIsDuration,
 		},
-
 		"scheduled_task_id": {
 			Description: "ID of the scheduled task that will execute the alert.",
 			Type:        schema.TypeString,
@@ -190,6 +274,16 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 
 	if v, ok := d.GetOk("notify_when"); ok {
 		rule.NotifyWhen = utils.Pointer(v.(string))
+	} else {
+		if serverVersion.LessThan(frequencyMinSupportedVersion) {
+			return models.AlertingRule{}, diag.Diagnostics{
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "notify_when is required until v8.6",
+					Detail:   "notify_when is required until v8.6",
+				},
+			}
+		}
 	}
 
 	if v, ok := d.GetOk("alert_delay"); ok {
@@ -201,13 +295,12 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 					Detail:   "alert_delay is only supported for Elasticsearch v8.13 or higher",
 				},
 			}
-
 		}
 
 		rule.AlertDelay = utils.Pointer(float32(v.(float64)))
 	}
 
-	actions, diags := getActionsFromResourceData(d)
+	actions, diags := getActionsFromResourceData(d, serverVersion)
 	if diags.HasError() {
 		return models.AlertingRule{}, diags
 	}
@@ -222,11 +315,11 @@ func getAlertingRuleFromResourceData(d *schema.ResourceData, serverVersion *vers
 	return rule, diags
 }
 
-func getActionsFromResourceData(d *schema.ResourceData) ([]models.AlertingRuleAction, diag.Diagnostics) {
+func getActionsFromResourceData(d *schema.ResourceData, serverVersion *version.Version) ([]models.AlertingRuleAction, diag.Diagnostics) {
 	actions := []models.AlertingRuleAction{}
 	if v, ok := d.GetOk("actions"); ok {
 		resourceActions := v.([]interface{})
-		for _, a := range resourceActions {
+		for i, a := range resourceActions {
 			action := a.(map[string]interface{})
 			paramsStr := action["params"].(string)
 			var params map[string]interface{}
@@ -235,11 +328,60 @@ func getActionsFromResourceData(d *schema.ResourceData) ([]models.AlertingRuleAc
 				return []models.AlertingRuleAction{}, diag.FromErr(err)
 			}
 
-			actions = append(actions, models.AlertingRuleAction{
+			a := models.AlertingRuleAction{
 				Group:  action["group"].(string),
 				ID:     action["id"].(string),
 				Params: params,
-			})
+			}
+
+			currentAction := fmt.Sprintf("actions.%d", i)
+
+			if _, ok := d.GetOk(currentAction + ".frequency"); ok {
+				if serverVersion.LessThan(frequencyMinSupportedVersion) {
+					return []models.AlertingRuleAction{}, diag.Errorf("actions.frequency is only supported for Elasticsearch v8.6 or higher")
+				}
+
+				frequency := models.ActionFrequency{
+					Summary:    d.Get(currentAction + ".frequency.0.summary").(bool),
+					NotifyWhen: d.Get(currentAction + ".frequency.0.notify_when").(string),
+				}
+
+				if throttle := getOrNilString(currentAction+".frequency.0.throttle", d); throttle != nil && *throttle != "" {
+					frequency.Throttle = throttle
+				}
+
+				a.Frequency = &frequency
+			}
+
+			if _, ok := d.GetOk(currentAction + ".alerts_filter"); ok {
+				if serverVersion.LessThan(alertsFilterMinSupportedVersion) {
+					return []models.AlertingRuleAction{}, diag.Errorf("actions.alerts_filter is only supported for Elasticsearch v8.9 or higher")
+				}
+
+				resourceDays := d.Get(currentAction + ".alerts_filter.0.timeframe.0.days").([]interface{})
+				days := []int32{}
+
+				for _, a := range resourceDays {
+					day := int32(a.(int))
+					days = append(days, day)
+				}
+
+				timeframe := models.AlertsFilterTimeframe{
+					Days:       days,
+					Timezone:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.timezone").(string),
+					HoursStart: d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_start").(string),
+					HoursEnd:   d.Get(currentAction + ".alerts_filter.0.timeframe.0.hours_end").(string),
+				}
+
+				filter := models.ActionAlertsFilter{
+					Kql:       d.Get(currentAction + ".alerts_filter.0.kql").(string),
+					Timeframe: timeframe,
+				}
+
+				a.AlertsFilter = &filter
+			}
+
+			actions = append(actions, a)
 		}
 	}
 
@@ -380,12 +522,47 @@ func resourceRuleRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		frequency := []interface{}{}
+
+		if action.Frequency != nil {
+			frequency = append(frequency, map[string]interface{}{
+				"summary":     action.Frequency.Summary,
+				"notify_when": action.Frequency.NotifyWhen,
+				"throttle":    action.Frequency.Throttle,
+			})
+		} else {
+			frequency = nil
+		}
+
+		alerts_filter := []interface{}{}
+
+		if action.AlertsFilter != nil {
+			timeframe := []interface{}{}
+			timeframe = append(timeframe, map[string]interface{}{
+				"days":        action.AlertsFilter.Timeframe.Days,
+				"timezone":    action.AlertsFilter.Timeframe.Timezone,
+				"hours_start": action.AlertsFilter.Timeframe.HoursStart,
+				"hours_end":   action.AlertsFilter.Timeframe.HoursEnd,
+			})
+
+			alerts_filter = append(alerts_filter, map[string]interface{}{
+				"kql":       action.AlertsFilter.Kql,
+				"timeframe": timeframe,
+			})
+		} else {
+			alerts_filter = nil
+		}
+
 		actions = append(actions, map[string]interface{}{
-			"group":  action.Group,
-			"id":     action.ID,
-			"params": string(params),
+			"group":         action.Group,
+			"id":            action.ID,
+			"params":        string(params),
+			"frequency":     frequency,
+			"alerts_filter": alerts_filter,
 		})
 	}
+
 	if err := d.Set("actions", actions); err != nil {
 		return diag.FromErr(err)
 	}

@@ -20,11 +20,39 @@ func ruleResponseToModel(spaceID string, res *alerting.RuleResponseProperties) *
 
 	actions := []models.AlertingRuleAction{}
 	for _, action := range res.Actions {
-		actions = append(actions, models.AlertingRuleAction{
+
+		a := models.AlertingRuleAction{
 			Group:  action.Group,
 			ID:     action.Id,
 			Params: action.Params,
-		})
+		}
+
+		if !alerting.IsNil(action.Frequency) {
+			frequency := unwrapOptionalField(action.Frequency)
+
+			a.Frequency = &models.ActionFrequency{
+				Summary:    frequency.Summary,
+				NotifyWhen: (string)(frequency.NotifyWhen),
+				Throttle:   frequency.Throttle.Get(),
+			}
+		}
+
+		if !alerting.IsNil(action.AlertsFilter) {
+			filter := unwrapOptionalField(action.AlertsFilter)
+			timeframe := unwrapOptionalField(filter.Timeframe)
+
+			a.AlertsFilter = &models.ActionAlertsFilter{
+				Kql: *filter.Query.Kql,
+				Timeframe: models.AlertsFilterTimeframe{
+					Days:       timeframe.Days,
+					Timezone:   *timeframe.Timezone,
+					HoursStart: *timeframe.Hours.Start,
+					HoursEnd:   *timeframe.Hours.End,
+				},
+			}
+		}
+
+		actions = append(actions, a)
 	}
 
 	var alertDelay *float32
@@ -68,11 +96,47 @@ func ruleActionsToActionsInner(ruleActions []models.AlertingRuleAction) []alerti
 	actions := []alerting.ActionsInner{}
 	for index := range ruleActions {
 		action := ruleActions[index]
-		actions = append(actions, alerting.ActionsInner{
+		actionToAppend := alerting.ActionsInner{
 			Group:  action.Group,
 			Id:     action.ID,
 			Params: action.Params,
-		})
+		}
+
+		if !alerting.IsNil(action.Frequency) {
+			frequency := alerting.ActionsInnerFrequency{
+				Summary:    action.Frequency.Summary,
+				NotifyWhen: (alerting.NotifyWhen)(action.Frequency.NotifyWhen),
+			}
+
+			if action.Frequency.Throttle != nil {
+				frequency.Throttle = *alerting.NewNullableString(action.Frequency.Throttle)
+			}
+
+			actionToAppend.Frequency = &frequency
+		}
+
+		if !alerting.IsNil(action.AlertsFilter) {
+			timeframe := action.AlertsFilter.Timeframe
+
+			filter := alerting.ActionsInnerAlertsFilter{
+				Query: &alerting.ActionsInnerAlertsFilterQuery{
+					Kql:     &action.AlertsFilter.Kql,
+					Filters: []alerting.Filter{},
+				},
+				Timeframe: &alerting.ActionsInnerAlertsFilterTimeframe{
+					Timezone: &timeframe.Timezone,
+					Days:     timeframe.Days,
+					Hours: &alerting.ActionsInnerAlertsFilterTimeframeHours{
+						Start: &timeframe.HoursStart,
+						End:   &timeframe.HoursEnd,
+					},
+				},
+			}
+
+			actionToAppend.AlertsFilter = &filter
+		}
+
+		actions = append(actions, actionToAppend)
 	}
 	return actions
 }

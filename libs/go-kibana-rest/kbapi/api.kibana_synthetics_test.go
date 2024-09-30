@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	namespaces = []string{"", "default", "testacc"}
+	spaces = []string{"", "default", "testacc"}
 )
 
 func testWithPolicy(t *testing.T, client *resty.Client, namespace string, f func(policyId string)) {
@@ -62,7 +62,7 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 
 	ctx := context.Background()
 
-	for _, n := range namespaces {
+	for _, n := range spaces {
 		testUuid := uuid.New().String()
 		space := n
 		syntheticsAPI := s.API.KibanaSynthetics
@@ -72,10 +72,10 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 				Label:         fmt.Sprintf("TestKibanaSyntheticsMonitorAdd %s", testUuid),
 				AgentPolicyId: policyId,
 			}
-			location, err := syntheticsAPI.PrivateLocation.Create(ctx, locationConfig, space)
+			location, err := syntheticsAPI.PrivateLocation.Create(ctx, locationConfig)
 			assert.NoError(s.T(), err)
 			defer func(id string) {
-				syntheticsAPI.PrivateLocation.Delete(ctx, id, space)
+				syntheticsAPI.PrivateLocation.Delete(ctx, id)
 			}(location.Id)
 
 			f := new(bool)
@@ -236,6 +236,129 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsMonitorAPI() {
 						},
 					},
 				},
+				{
+					name: "bare minimum icmp monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test synthetics icmp monitor %s", testUuid),
+							PrivateLocations: []string{location.Label},
+						},
+						fields: ICMPMonitorFields{
+							Host: "localhost",
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{},
+						fields: ICMPMonitorFields{
+							Host: "127.0.0.1",
+						},
+					},
+				},
+				{
+					name: "all fields icmp monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test all fields icmp monitor %s", testUuid),
+							Schedule:         Every10Minutes,
+							PrivateLocations: []string{location.Label},
+							Enabled:          f,
+							Tags:             []string{"aaa", "bbb"},
+							Alert: &MonitorAlertConfig{
+								Status: &SyntheticsStatusConfig{Enabled: t},
+								Tls:    &SyntheticsStatusConfig{Enabled: f},
+							},
+							APMServiceName: "APMServiceName",
+							TimeoutSeconds: 42,
+							Namespace:      space,
+							Params: map[string]interface{}{
+								"param1": "some-params",
+								"my_url": "http://localhost:8080",
+							},
+							RetestOnFailure: f,
+						},
+						fields: ICMPMonitorFields{
+							Host: "localhost",
+							Wait: "10",
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:     fmt.Sprintf("update all fields icmp monitor %s", testUuid),
+							Schedule: Every30Minutes,
+						},
+						fields: ICMPMonitorFields{
+							Host: "127.0.0.1",
+							Wait: "5",
+						},
+					},
+				},
+				{
+					name: "bare minimum browser monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test synthetics browser monitor %s", testUuid),
+							PrivateLocations: []string{location.Label},
+						},
+						fields: BrowserMonitorFields{
+							InlineScript: `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name: fmt.Sprintf("test synthetics browser monitor %s", testUuid),
+						},
+						fields: BrowserMonitorFields{
+							InlineScript: `step('Go to https://www.google.de', () => page.goto('https://www.google.de'))`,
+						},
+					},
+				},
+				{
+					name: "all fields browser monitor",
+					input: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:             fmt.Sprintf("test all fields browser monitor %s", testUuid),
+							Schedule:         Every10Minutes,
+							PrivateLocations: []string{location.Label},
+							Enabled:          f,
+							Tags:             []string{"aaa", "bbb"},
+							Alert: &MonitorAlertConfig{
+								Status: &SyntheticsStatusConfig{Enabled: t},
+								Tls:    &SyntheticsStatusConfig{Enabled: f},
+							},
+							APMServiceName: "APMServiceName",
+							TimeoutSeconds: 42,
+							Namespace:      space,
+							Params: map[string]interface{}{
+								"param1": "some-params",
+								"my_url": "http://localhost:8080",
+							},
+							RetestOnFailure: f,
+						},
+						fields: BrowserMonitorFields{
+							InlineScript:      `step('Go to https://google.com.co', () => page.goto('https://www.google.com'))`,
+							Screenshots:       ScreenshotOn,
+							SyntheticsArgs:    []string{"a", "b"},
+							IgnoreHttpsErrors: t,
+							PlaywrightOptions: map[string]interface{}{
+								"ignoreHTTPSErrors": false,
+								"httpCredentials": map[string]interface{}{
+									"username": "test",
+									"password": "test",
+								},
+							},
+						},
+					},
+					update: TestConfig{
+						config: SyntheticsMonitorConfig{
+							Name:     fmt.Sprintf("update all fields browser monitor %s", testUuid),
+							Schedule: Every30Minutes,
+						},
+						fields: BrowserMonitorFields{
+							InlineScript: `step('Go to https://google.de', () => page.goto('https://www.google.de'))`,
+							Screenshots:  ScreenshotOff,
+						},
+					},
+				},
 			}
 
 			for _, tc := range testCases {
@@ -298,19 +421,21 @@ func updateDueToKibanaAPIDiff(m *SyntheticsMonitor) {
 	m.CheckRequestHeaders = nil
 	m.CheckSend = ""
 	m.CheckReceive = ""
+	m.InlineScript = ""
+	m.SyntheticsArgs = nil
 }
 
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 
 	ctx := context.Background()
 
-	for _, n := range namespaces {
+	for _, n := range spaces {
 		testUuid := uuid.New().String()
-		space := n
+		namespace := n
 		pAPI := s.API.KibanaSynthetics.PrivateLocation
 
 		s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI - %s", n), func() {
-			testWithPolicy(s.T(), s.client, space, func(policyId string) {
+			testWithPolicy(s.T(), s.client, namespace, func(policyId string) {
 
 				cfg := PrivateLocationConfig{
 					Label:         fmt.Sprintf("TestKibanaSyntheticsPrivateLocationAPI-%s", testUuid),
@@ -321,24 +446,24 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 						Lon: -42.42,
 					},
 				}
-				created, err := pAPI.Create(ctx, cfg, space)
+				created, err := pAPI.Create(ctx, cfg)
 
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created.Label, cfg.Label)
 				assert.Equal(s.T(), created.AgentPolicyId, cfg.AgentPolicyId)
 
-				get, err := pAPI.Get(ctx, created.Id, space)
+				get, err := pAPI.Get(ctx, created.Id)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				get, err = pAPI.Get(ctx, created.Label, space)
+				get, err = pAPI.Get(ctx, created.Label)
 				assert.NoError(s.T(), err)
 				assert.Equal(s.T(), created, get)
 
-				err = pAPI.Delete(ctx, created.Id, space)
+				err = pAPI.Delete(ctx, created.Id)
 				assert.NoError(s.T(), err)
 
-				_, err = pAPI.Get(ctx, created.Id, space)
+				_, err = pAPI.Get(ctx, created.Id)
 				assert.Error(s.T(), err)
 			})
 		})
@@ -346,21 +471,18 @@ func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationAPI() {
 }
 
 func (s *KBAPITestSuite) TestKibanaSyntheticsPrivateLocationNotFound() {
-	for _, n := range namespaces {
-		testUuid := uuid.New().String()
-		space := n
-		pAPI := s.API.KibanaSynthetics.PrivateLocation
+	testUuid := uuid.New().String()
+	pAPI := s.API.KibanaSynthetics.PrivateLocation
 
-		ids := []string{"", "not-found", testUuid}
-		ctx := context.Background()
+	ids := []string{"", "not-found", testUuid}
+	ctx := context.Background()
 
-		for _, id := range ids {
-			s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNotFound - %s - %s", n, id), func() {
-				_, err := pAPI.Get(ctx, id, space)
-				assert.Error(s.T(), err)
-				assert.IsType(s.T(), APIError{}, err)
-				assert.Equal(s.T(), 404, err.(APIError).Code)
-			})
-		}
+	for _, id := range ids {
+		s.Run(fmt.Sprintf("TestKibanaSyntheticsPrivateLocationNotFound - %s", id), func() {
+			_, err := pAPI.Get(ctx, id)
+			assert.Error(s.T(), err)
+			assert.IsType(s.T(), APIError{}, err)
+			assert.Equal(s.T(), 404, err.(APIError).Code)
+		})
 	}
 }

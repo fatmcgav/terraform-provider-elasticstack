@@ -81,15 +81,11 @@ func New(version string) *schema.Provider {
 
 			"elasticstack_kibana_action_connector": kibana.DataSourceConnector(),
 			"elasticstack_kibana_security_role":    kibana.DataSourceRole(),
-
-			"elasticstack_fleet_enrollment_tokens": fleet.DataSourceEnrollmentTokens(),
-			"elasticstack_fleet_integration":       fleet.DataSourceIntegration(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"elasticstack_elasticsearch_cluster_settings":      cluster.ResourceSettings(),
 			"elasticstack_elasticsearch_component_template":    index.ResourceComponentTemplate(),
 			"elasticstack_elasticsearch_data_stream":           index.ResourceDataStream(),
-			"elasticstack_elasticsearch_index":                 index.ResourceIndex(),
 			"elasticstack_elasticsearch_index_lifecycle":       index.ResourceIlm(),
 			"elasticstack_elasticsearch_index_template":        index.ResourceTemplate(),
 			"elasticstack_elasticsearch_ingest_pipeline":       ingest.ResourceIngestPipeline(),
@@ -112,10 +108,7 @@ func New(version string) *schema.Provider {
 			"elasticstack_kibana_security_role":    kibana.ResourceRole(),
 			"elasticstack_kibana_slo":              kibana.ResourceSlo(),
 
-			"elasticstack_fleet_agent_policy":       fleet.ResourceAgentPolicy(),
 			"elasticstack_fleet_output":             fleet.ResourceOutput(),
-			"elasticstack_fleet_server_host":        fleet.ResourceFleetServerHost(),
-			"elasticstack_fleet_integration":        fleet.ResourceIntegration(),
 			"elasticstack_fleet_integration_policy": fleet.ResourceIntegrationPolicy(),
 		},
 	}

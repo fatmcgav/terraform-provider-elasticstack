@@ -1,16 +1,22 @@
 package synthetics
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/disaster37/go-kibana-rest/v8/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -39,7 +45,7 @@ type tfAlertConfigV0 struct {
 type tfHTTPMonitorFieldsV0 struct {
 	URL                   types.String         `tfsdk:"url"`
 	SslVerificationMode   types.String         `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols []types.String       `tfsdk:"ssl_supported_protocols"`
+	SslSupportedProtocols types.List           `tfsdk:"ssl_supported_protocols"`
 	MaxRedirects          types.Int64          `tfsdk:"max_redirects"`
 	Mode                  types.String         `tfsdk:"mode"`
 	IPv4                  types.Bool           `tfsdk:"ipv4"`
@@ -53,31 +59,46 @@ type tfHTTPMonitorFieldsV0 struct {
 }
 
 type tfTCPMonitorFieldsV0 struct {
-	Host                  types.String   `tfsdk:"host"`
-	SslVerificationMode   types.String   `tfsdk:"ssl_verification_mode"`
-	SslSupportedProtocols []types.String `tfsdk:"ssl_supported_protocols"`
-	CheckSend             types.String   `tfsdk:"check_send"`
-	CheckReceive          types.String   `tfsdk:"check_receive"`
-	ProxyURL              types.String   `tfsdk:"proxy_url"`
-	ProxyUseLocalResolver types.Bool     `tfsdk:"proxy_use_local_resolver"`
+	Host                  types.String `tfsdk:"host"`
+	SslVerificationMode   types.String `tfsdk:"ssl_verification_mode"`
+	SslSupportedProtocols types.List   `tfsdk:"ssl_supported_protocols"`
+	CheckSend             types.String `tfsdk:"check_send"`
+	CheckReceive          types.String `tfsdk:"check_receive"`
+	ProxyURL              types.String `tfsdk:"proxy_url"`
+	ProxyUseLocalResolver types.Bool   `tfsdk:"proxy_use_local_resolver"`
+}
+
+type tfICMPMonitorFieldsV0 struct {
+	Host types.String `tfsdk:"host"`
+	Wait types.Int64  `tfsdk:"wait"`
+}
+
+type tfBrowserMonitorFieldsV0 struct {
+	InlineScript      types.String         `tfsdk:"inline_script"`
+	Screenshots       types.String         `tfsdk:"screenshots"`
+	SyntheticsArgs    []types.String       `tfsdk:"synthetics_args"`
+	IgnoreHttpsErrors types.Bool           `tfsdk:"ignore_https_errors"`
+	PlaywrightOptions jsontypes.Normalized `tfsdk:"playwright_options"`
 }
 
 type tfModelV0 struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	SpaceID          types.String           `tfsdk:"space_id"`
-	Schedule         types.Int64            `tfsdk:"schedule"`
-	Locations        []types.String         `tfsdk:"locations"`
-	PrivateLocations []types.String         `tfsdk:"private_locations"`
-	Enabled          types.Bool             `tfsdk:"enabled"`
-	Tags             []types.String         `tfsdk:"tags"`
-	Alert            *tfAlertConfigV0       `tfsdk:"alert"`
-	APMServiceName   types.String           `tfsdk:"service_name"`
-	TimeoutSeconds   types.Int64            `tfsdk:"timeout"`
-	HTTP             *tfHTTPMonitorFieldsV0 `tfsdk:"http"`
-	TCP              *tfTCPMonitorFieldsV0  `tfsdk:"tcp"`
-	Params           jsontypes.Normalized   `tfsdk:"params"`
-	RetestOnFailure  types.Bool             `tfsdk:"retest_on_failure"`
+	ID               types.String              `tfsdk:"id"`
+	Name             types.String              `tfsdk:"name"`
+	SpaceID          types.String              `tfsdk:"space_id"`
+	Schedule         types.Int64               `tfsdk:"schedule"`
+	Locations        []types.String            `tfsdk:"locations"`
+	PrivateLocations []types.String            `tfsdk:"private_locations"`
+	Enabled          types.Bool                `tfsdk:"enabled"`
+	Tags             []types.String            `tfsdk:"tags"`
+	Alert            *tfAlertConfigV0          `tfsdk:"alert"`
+	APMServiceName   types.String              `tfsdk:"service_name"`
+	TimeoutSeconds   types.Int64               `tfsdk:"timeout"`
+	HTTP             *tfHTTPMonitorFieldsV0    `tfsdk:"http"`
+	TCP              *tfTCPMonitorFieldsV0     `tfsdk:"tcp"`
+	ICMP             *tfICMPMonitorFieldsV0    `tfsdk:"icmp"`
+	Browser          *tfBrowserMonitorFieldsV0 `tfsdk:"browser"`
+	Params           jsontypes.Normalized      `tfsdk:"params"`
+	RetestOnFailure  types.Bool                `tfsdk:"retest_on_failure"`
 }
 
 func GetCompositeId(id string) (*clients.CompositeId, diag.Diagnostics) {
@@ -165,12 +186,69 @@ func monitorConfigSchema() schema.Schema {
 				Optional:            true,
 				MarkdownDescription: "The monitor timeout in seconds, monitor will fail if it doesn’t complete within this time. Default: `16`",
 			},
-			"params": jsonObjectSchema("Monitor parameters"),
-			"http":   httpMonitorFieldsSchema(),
-			"tcp":    tcpMonitorFieldsSchema(),
+			"params":  jsonObjectSchema("Monitor parameters"),
+			"http":    httpMonitorFieldsSchema(),
+			"tcp":     tcpMonitorFieldsSchema(),
+			"icmp":    icmpMonitorFieldsSchema(),
+			"browser": browserMonitorFieldsSchema(),
 			"retest_on_failure": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Enable or disable retesting when a monitor fails. By default, monitors are automatically retested if the monitor goes from \"up\" to \"down\". If the result of the retest is also \"down\", an error will be created, and if configured, an alert sent. Then the monitor will resume running according to the defined schedule. Using retest_on_failure can reduce noise related to transient problems. Default: `true`.",
+			},
+		},
+	}
+}
+
+func browserMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Browser Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"inline_script": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "The inline script.",
+			},
+			"screenshots": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Controls the behavior of the screenshots feature.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("on", "off", "only-on-failure"),
+				},
+				Computed:      true,
+				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"synthetics_args": schema.ListAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Synthetics agent CLI arguments.",
+			},
+			"ignore_https_errors": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Whether to ignore HTTPS errors.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+			},
+			"playwright_options": jsonObjectSchema("Playwright options."),
+		},
+	}
+}
+
+func icmpMonitorFieldsSchema() schema.Attribute {
+	return schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "ICMP Monitor specific fields",
+		Attributes: map[string]schema.Attribute{
+			"host": schema.StringAttribute{
+				Optional:            false,
+				Required:            true,
+				MarkdownDescription: "Host to ping; it can be an IP address or a hostname.",
+			},
+			"wait": schema.Int64Attribute{
+				Optional:            true,
+				MarkdownDescription: " Wait time in seconds. Default: `1`",
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+				Computed:            true,
 			},
 		},
 	}
@@ -219,15 +297,21 @@ func httpMonitorFieldsSchema() schema.Attribute {
 			"ssl_verification_mode": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Controls the verification of server certificates. ",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ssl_supported_protocols": schema.ListAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "List of allowed SSL/TLS versions.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 			},
 			"max_redirects": schema.Int64Attribute{
 				Optional:            true,
 				MarkdownDescription: "The maximum number of redirects to follow. Default: `0`",
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+				Computed:            true,
 			},
 			"mode": schema.StringAttribute{
 				Optional:            true,
@@ -256,6 +340,8 @@ func httpMonitorFieldsSchema() schema.Attribute {
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The URL of the proxy to use for this monitor.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"response": jsonObjectSchema("Controls the indexing of the HTTP response body contents to the `http.response.body.contents` field."),
 			"check":    jsonObjectSchema("The check request settings."),
@@ -276,11 +362,15 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			"ssl_verification_mode": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Controls the verification of server certificates. ",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"ssl_supported_protocols": schema.ListAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "List of allowed SSL/TLS versions.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.List{listplanmodifier.UseStateForUnknown()},
 			},
 			"check_send": schema.StringAttribute{
 				Optional:            true,
@@ -293,6 +383,8 @@ func tcpMonitorFieldsSchema() schema.Attribute {
 			"proxy_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"proxy_use_local_resolver": schema.BoolAttribute{
 				Optional:            true,
@@ -388,20 +480,22 @@ func stringToInt64(v string) (int64, error) {
 	return res, err
 }
 
-func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) {
+func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor) (*tfModelV0, diag.Diagnostics) {
 	var schedule int64
 	var err error
+	dg := diag.Diagnostics{}
 	if api.Schedule != nil {
 		schedule, err = stringToInt64(api.Schedule.Number)
 		if err != nil {
-			return nil, err
+			dg.AddError("Failed to convert schedule to int64", err.Error())
+			return nil, dg
 		}
 	}
 	var locLabels []string
 	var privateLocLabels []string
 	for _, l := range api.Locations {
 		if l.IsServiceManaged {
-			locLabels = append(locLabels, l.Label)
+			locLabels = append(locLabels, l.Id)
 		} else {
 			privateLocLabels = append(privateLocLabels, l.Label)
 		}
@@ -409,11 +503,14 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 
 	timeout, err := stringToInt64(string(api.Timeout))
 	if err != nil {
-		return nil, err
+		dg.AddError("Failed to convert timeout to int64", err.Error())
+		return nil, dg
 	}
 
 	var http *tfHTTPMonitorFieldsV0
 	var tcp *tfTCPMonitorFieldsV0
+	var icmp *tfICMPMonitorFieldsV0
+	var browser *tfBrowserMonitorFieldsV0
 
 	switch mType := api.Type; mType {
 	case kbapi.Http:
@@ -421,26 +518,40 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 		if v.HTTP != nil {
 			http = v.HTTP
 		}
-		http, err = http.toTfHTTPMonitorFieldsV0(api)
+		http = http.toTfHTTPMonitorFieldsV0(ctx, dg, api)
 	case kbapi.Tcp:
 		tcp = &tfTCPMonitorFieldsV0{}
 		if v.TCP != nil {
 			tcp = v.TCP
 		}
-		tcp, err = tcp.toTfTCPMonitorFieldsV0(api)
+		tcp = tcp.toTfTCPMonitorFieldsV0(ctx, dg, api)
+	case kbapi.Icmp:
+		icmp = &tfICMPMonitorFieldsV0{}
+		if v.ICMP != nil {
+			icmp = v.ICMP
+		}
+		icmp, err = icmp.toTfICMPMonitorFieldsV0(api)
+	case kbapi.Browser:
+		browser = &tfBrowserMonitorFieldsV0{}
+		if v.Browser != nil {
+			browser = v.Browser
+		}
+		browser, err = browser.toTfBrowserMonitorFieldsV0(api)
 	default:
 		err = fmt.Errorf("unsupported monitor type: %s", mType)
 	}
 
 	if err != nil {
-		return nil, err
+		dg.AddError("Failed to convert monitor fields", err.Error())
+		return nil, dg
 	}
 
 	params := v.Params
 	if api.Params != nil {
 		params, err = toNormalizedValue(api.Params)
 		if err != nil {
-			return nil, err
+			dg.AddError("Failed to parse params", err.Error())
+			return nil, dg
 		}
 	}
 
@@ -464,11 +575,13 @@ func (v *tfModelV0) toModelV0(api *kbapi.SyntheticsMonitor) (*tfModelV0, error) 
 		Params:           params,
 		HTTP:             http,
 		TCP:              tcp,
+		ICMP:             icmp,
+		Browser:          browser,
 		RetestOnFailure:  v.RetestOnFailure,
-	}, nil
+	}, dg
 }
 
-func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfTCPMonitorFieldsV0, error) {
+func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfTCPMonitorFieldsV0 {
 	checkSend := v.CheckSend
 	if api.CheckSend != "" {
 		checkSend = types.StringValue(api.CheckSend)
@@ -477,25 +590,71 @@ func (v *tfTCPMonitorFieldsV0) toTfTCPMonitorFieldsV0(api *kbapi.SyntheticsMonit
 	if api.CheckReceive != "" {
 		checkReceive = types.StringValue(api.CheckReceive)
 	}
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), dg)
+	if dg.HasError() {
+		return nil
+	}
 	return &tfTCPMonitorFieldsV0{
 		Host:                  types.StringValue(api.Host),
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
-		SslSupportedProtocols: StringSliceValue(api.SslSupportedProtocols),
+		SslSupportedProtocols: sslSupportedProtocols,
 		CheckSend:             checkSend,
 		CheckReceive:          checkReceive,
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		ProxyUseLocalResolver: types.BoolPointerValue(api.ProxyUseLocalResolver),
+	}
+}
+
+func (v *tfICMPMonitorFieldsV0) toTfICMPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfICMPMonitorFieldsV0, error) {
+	wait, err := stringToInt64(string(api.Wait))
+	if err != nil {
+		return nil, err
+	}
+	return &tfICMPMonitorFieldsV0{
+		Host: types.StringValue(api.Host),
+		Wait: types.Int64Value(wait),
 	}, nil
 }
 
-func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfHTTPMonitorFieldsV0, error) {
+func (v *tfBrowserMonitorFieldsV0) toTfBrowserMonitorFieldsV0(api *kbapi.SyntheticsMonitor) (*tfBrowserMonitorFieldsV0, error) {
+
+	var err error
+	playwrightOptions := v.PlaywrightOptions
+	if api.PlaywrightOptions != nil {
+		playwrightOptions, err = toNormalizedValue(api.PlaywrightOptions)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	syntheticsArgs := v.SyntheticsArgs
+	if api.SyntheticsArgs != nil {
+		syntheticsArgs = StringSliceValue(api.SyntheticsArgs)
+	}
+
+	inlineScript := v.InlineScript
+	if api.InlineScript != "" {
+		inlineScript = types.StringValue(api.InlineScript)
+	}
+
+	return &tfBrowserMonitorFieldsV0{
+		InlineScript:      inlineScript,
+		Screenshots:       types.StringValue(api.Screenshots),
+		SyntheticsArgs:    syntheticsArgs,
+		IgnoreHttpsErrors: types.BoolPointerValue(api.IgnoreHttpsErrors),
+		PlaywrightOptions: playwrightOptions,
+	}, nil
+}
+
+func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(ctx context.Context, dg diag.Diagnostics, api *kbapi.SyntheticsMonitor) *tfHTTPMonitorFieldsV0 {
 
 	var err error
 	proxyHeaders := v.ProxyHeader
 	if api.ProxyHeaders != nil {
 		proxyHeaders, err = toNormalizedValue(api.ProxyHeaders)
 		if err != nil {
-			return nil, err
+			dg.AddError("Failed to parse proxy_headers", err.Error())
+			return nil
 		}
 	}
 
@@ -510,13 +669,19 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMon
 
 	maxRedirects, err := stringToInt64(api.MaxRedirects)
 	if err != nil {
-		return nil, err
+		dg.AddError("Failed to parse max_redirects", err.Error())
+		return nil
 	}
 
+	sslSupportedProtocols := utils.SliceToListType_String(ctx, api.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), dg)
+
+	if dg.HasError() {
+		return nil
+	}
 	return &tfHTTPMonitorFieldsV0{
 		URL:                   types.StringValue(api.Url),
 		SslVerificationMode:   types.StringValue(api.SslVerificationMode),
-		SslSupportedProtocols: StringSliceValue(api.SslSupportedProtocols),
+		SslSupportedProtocols: sslSupportedProtocols,
 		MaxRedirects:          types.Int64Value(maxRedirects),
 		Mode:                  types.StringValue(string(api.Mode)),
 		IPv4:                  types.BoolPointerValue(api.Ipv4),
@@ -527,7 +692,7 @@ func (v *tfHTTPMonitorFieldsV0) toTfHTTPMonitorFieldsV0(api *kbapi.SyntheticsMon
 		ProxyURL:              types.StringValue(api.ProxyUrl),
 		Check:                 v.Check,
 		Response:              v.Response,
-	}, nil
+	}
 }
 
 func toTfAlertConfigV0(alert *kbapi.MonitorAlertConfig) *tfAlertConfigV0 {
@@ -549,9 +714,9 @@ func toTfStatusConfigV0(status *kbapi.SyntheticsStatusConfig) *tfStatusConfigV0 
 	}
 }
 
-func (v *tfModelV0) toKibanaAPIRequest() (*kibanaAPIRequest, diag.Diagnostics) {
+func (v *tfModelV0) toKibanaAPIRequest(ctx context.Context) (*kibanaAPIRequest, diag.Diagnostics) {
 
-	fields, dg := v.toMonitorFields()
+	fields, dg := v.toMonitorFields(ctx)
 	if dg.HasError() {
 		return nil, dg
 	}
@@ -565,13 +730,17 @@ func (v *tfModelV0) toKibanaAPIRequest() (*kibanaAPIRequest, diag.Diagnostics) {
 	}, dg
 }
 
-func (v *tfModelV0) toMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
-	var dg diag.Diagnostics
+func (v *tfModelV0) toMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+	dg := diag.Diagnostics{}
 
 	if v.HTTP != nil {
-		return v.toHttpMonitorFields()
+		return v.toHttpMonitorFields(ctx)
 	} else if v.TCP != nil {
-		return v.toTCPMonitorFields(), dg
+		return v.toTCPMonitorFields(ctx)
+	} else if v.ICMP != nil {
+		return v.toICMPMonitorFields(), dg
+	} else if v.Browser != nil {
+		return v.toBrowserMonitorFields()
 	}
 
 	dg.AddError("Unsupported monitor type config", "one of http,tcp monitor fields is required")
@@ -606,7 +775,15 @@ func (v *tfModelV0) toSyntheticsMonitorConfig() (*kbapi.SyntheticsMonitorConfig,
 	}, diag.Diagnostics{} //dg
 }
 
-func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+func tfInt64ToString(v types.Int64) string {
+	res := ""
+	if !v.IsUnknown() && !v.IsNull() { // handle omitempty case
+		return strconv.FormatInt(v.ValueInt64(), 10)
+	}
+	return res
+}
+
+func (v *tfModelV0) toHttpMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
 	proxyHeaders, dg := toJsonObject(v.HTTP.ProxyHeader)
 	if dg.HasError() {
 		return nil, dg
@@ -619,15 +796,17 @@ func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics
 	if dg.HasError() {
 		return nil, dg
 	}
-	maxRedirects := ""
-	if !v.HTTP.MaxRedirects.IsUnknown() && !v.HTTP.MaxRedirects.IsNull() { // handle omitempty case
-		maxRedirects = strconv.FormatInt(v.HTTP.MaxRedirects.ValueInt64(), 10)
 
+	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.HTTP.SslSupportedProtocols, path.Root("http").AtName("ssl_supported_protocols"), dg)
+	if dg.HasError() {
+		return nil, dg
 	}
+
+	maxRedirects := tfInt64ToString(v.HTTP.MaxRedirects)
 	return kbapi.HTTPMonitorFields{
 		Url:                   v.HTTP.URL.ValueString(),
 		SslVerificationMode:   v.HTTP.SslVerificationMode.ValueString(),
-		SslSupportedProtocols: ValueStringSlice(v.HTTP.SslSupportedProtocols),
+		SslSupportedProtocols: sslSupportedProtocols,
 		MaxRedirects:          maxRedirects,
 		Mode:                  kbapi.HttpMonitorMode(v.HTTP.Mode.ValueString()),
 		Ipv4:                  v.HTTP.IPv4.ValueBoolPointer(),
@@ -638,19 +817,46 @@ func (v *tfModelV0) toHttpMonitorFields() (kbapi.MonitorFields, diag.Diagnostics
 		ProxyUrl:              v.HTTP.ProxyURL.ValueString(),
 		Response:              response,
 		Check:                 check,
-	}, diag.Diagnostics{} //dg
+	}, dg
 }
 
-func (v *tfModelV0) toTCPMonitorFields() kbapi.MonitorFields {
+func (v *tfModelV0) toTCPMonitorFields(ctx context.Context) (kbapi.MonitorFields, diag.Diagnostics) {
+	dg := diag.Diagnostics{}
+	sslSupportedProtocols := utils.ListTypeToSlice_String(ctx, v.TCP.SslSupportedProtocols, path.Root("tcp").AtName("ssl_supported_protocols"), dg)
+	if dg.HasError() {
+		return nil, dg
+	}
+
 	return kbapi.TCPMonitorFields{
 		Host:                  v.TCP.Host.ValueString(),
 		SslVerificationMode:   v.TCP.SslVerificationMode.ValueString(),
-		SslSupportedProtocols: ValueStringSlice(v.TCP.SslSupportedProtocols),
+		SslSupportedProtocols: sslSupportedProtocols,
 		CheckSend:             v.TCP.CheckSend.ValueString(),
 		CheckReceive:          v.TCP.CheckReceive.ValueString(),
 		ProxyUrl:              v.TCP.ProxyURL.ValueString(),
 		ProxyUseLocalResolver: v.TCP.ProxyUseLocalResolver.ValueBoolPointer(),
+	}, dg
+}
+
+func (v *tfModelV0) toICMPMonitorFields() kbapi.MonitorFields {
+	return kbapi.ICMPMonitorFields{
+		Host: v.ICMP.Host.ValueString(),
+		Wait: tfInt64ToString(v.ICMP.Wait),
 	}
+}
+
+func (v *tfModelV0) toBrowserMonitorFields() (kbapi.MonitorFields, diag.Diagnostics) {
+	playwrightOptions, dg := toJsonObject(v.Browser.PlaywrightOptions)
+	if dg.HasError() {
+		return nil, dg
+	}
+	return kbapi.BrowserMonitorFields{
+		InlineScript:      v.Browser.InlineScript.ValueString(),
+		Screenshots:       kbapi.ScreenshotOption(v.Browser.Screenshots.ValueString()),
+		SyntheticsArgs:    ValueStringSlice(v.Browser.SyntheticsArgs),
+		IgnoreHttpsErrors: v.Browser.IgnoreHttpsErrors.ValueBoolPointer(),
+		PlaywrightOptions: playwrightOptions,
+	}, diag.Diagnostics{} //dg
 }
 
 func Map[T, U any](ts []T, f func(T) U) []U {

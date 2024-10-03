@@ -1042,7 +1042,7 @@ type UpdateFleetServerHostsJSONBody struct {
 	Name       *string   `json:"name,omitempty"`
 
 	// ProxyId The ID of the proxy to use for this fleet server host. See the proxies API for more information.
-	ProxyId *string `json:"proxy_id"`
+	ProxyId *string `json:"proxy_id,omitempty"`
 }
 
 // CreatePackagePolicyParams defines parameters for CreatePackagePolicy.

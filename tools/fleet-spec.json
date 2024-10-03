@@ -7680,8 +7680,7 @@
           },
           "overrides": {
             "type": "object",
-            "description": "Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure.",
-            "nullable": true
+            "description": "Override settings that are defined in the agent policy. Input settings cannot be overridden. The override option should be used only in unusual circumstances and not as a routine procedure."
           },
           "advanced_settings": {
             "type": "object",
@@ -8325,8 +8324,7 @@
                 "type": "object"
               }
             },
-            "description": "Override settings that are defined in the package policy. The override option should be used only in unusual circumstances and not as a routine procedure.",
-            "nullable": true
+            "description": "Override settings that are defined in the package policy. The override option should be used only in unusual circumstances and not as a routine procedure."
           },
           "force": {
             "type": "boolean",
